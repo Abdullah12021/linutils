@@ -4,18 +4,6 @@ A modular, cozy, and highly customizable post-installation setup script for Arch
 
 ---
 
-## Features
-
-- **Dual Interfaces:**
-  - **Cozy CLI Mode:** A custom 256-color terminal design with clear single-column listing and vertical bar separators (`│`).
-  - **Modern TUI Mode (Gum):** An interactive multi-selection checklist displaying group categories with neat spacing.
-- **Hardware-Aware Safety:** Automatically detects CPU (`intel`/`amd`) and GPU (`intel`/`amd`/`nvidia`) types to filter out incorrect microcodes (e.g. preventing `intel-ucode` install on an AMD CPU) and ensure correct graphics drivers.
-- **Silent Bootstrapping:** Automatically installs `gum` if you choose TUI mode and it's missing on the target machine (using cached credentials to keep it silent).
-- **Decoupled Architecture:** Built to separate package lists, installer routines, dotfiles configuration management, and wallpapers.
-- **Zero-Footprint Remote Run:** Sourced and executed directly from GitHub via a single `curl` command. Temporary files are cleared automatically upon exiting.
-
----
-
 ## Usage
 
 ### Remote Run (Instantly from GitHub)
@@ -25,25 +13,13 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Abdullah12021/linutils/main/
 ```
 
 ### Local Run
-Clone the repository and run it locally:
+Clone the repository, make the script executable, and run it:
 ```bash
 git clone https://github.com/Abdullah12021/linutils.git
 cd linutils
-bash linutils.sh
+chmod +x linutils.sh
+./linutils.sh
 ```
-
----
-
-## CLI Flags
-Customize execution behavior using command line flags:
-
-| Flag | Description |
-| :--- | :--- |
-| `--gum` | Force launch in TUI mode (installs `gum` automatically if missing) |
-| `--sys-conf` | Configure multilib, refresh keyring, and rank pacman mirrors via `reflector` |
-| `--install-all` | Run non-interactive installations for all category lists |
-| `--category <name>` | Install packages from a specific category list non-interactively |
-| `--help` | Display the help menu |
 
 ---
 
