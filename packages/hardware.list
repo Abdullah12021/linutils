@@ -1,0 +1,20 @@
+# [CPU Microcode]
+intel-ucode
+amd-ucode
+
+# [GPU Drivers AMD]
+mesa
+vulkan-radeon
+
+# [GPU Drivers Intel]
+vulkan-intel
+intel-media-driver
+
+# [GPU Drivers NVIDIA]
+nvidia
+nvidia-utils
+lib32-nvidia-utils
+
+# [Firmware]
+linux-firmware
+sof-firmware

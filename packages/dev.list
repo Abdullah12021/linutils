@@ -1,0 +1,15 @@
+# [Core Toolchain]
+base-devel
+git
+github-cli
+glab
+
+# [Build Engines]
+cmake
+ninja
+
+# [Compilers & Runtimes]
+python
+python-pip
+nodejs
+npm

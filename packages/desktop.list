@@ -1,0 +1,42 @@
+# [Display & Window Manager]
+sddm
+hyprland
+xorg-xwayland
+
+# [Desktop Components]
+waybar
+rofi-wayland
+swaync
+quickshell
+hyprpaper
+hyprlock
+hypridle
+wlogout
+wl-clipboard
+wallust
+brightnessctl
+
+# [Applets]
+network-manager-applet
+blueman
+pavucontrol
+
+# [Desktop Appearance & Monitor Settings]
+nwg-look
+nwg-displays
+
+# [Media Capture]
+grim
+slurp
+swappy
+cliphist
+gpu-screen-recorder-gtk
+
+# [GTK & Icon Themes]
+papirus-icon-theme
+gnome-themes-extra
+materia-gtk-theme
+
+# [Fonts]
+ttf-nerd-fonts-symbols-common
+ttf-material-design-icons-desktop-git

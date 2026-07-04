@@ -1,0 +1,57 @@
+# [System Monitors & Diagnostics]
+btop
+htop
+ncdu
+
+# [File Managers & Search]
+yazi
+ranger
+broot
+fzf
+
+# [Shell Enhancements]
+starship
+blesh-git
+bat
+eza
+jdupes
+rsync
+hexyl
+tree
+
+# [Archive & File Transfer]
+zip
+unzip
+rsync
+
+# [Streaming]
+curd
+torlink
+kew
+
+# [Media Downloaders]
+gallery-dl
+yt-dlp
+wget
+
+# [Terminal screen recorder]
+asciinema
+asciinema-agg
+
+# [Text Editors]
+neovim
+nano
+micro
+
+# [Aesthetics]
+cmatrix
+cbonsai-git
+figlet
+asciinema
+asciinema-agg
+ttyper
+cava
+
+# [Dictionary]
+sdcv
+stardict-wordnet

@@ -1,0 +1,28 @@
+# [Network Services]
+networkmanager
+
+# [Security]
+ufw
+
+# [System Performance]
+zram-generator
+
+# [Bluetooth Infrastructure]
+bluez
+bluez-utils
+
+# [Audio Infrastructure]
+pipewire
+pipewire-pulse
+libspa-bluetooth
+pipewire-alsa
+pipewire-jack
+wireplumber
+gst-plugin-pipewire
+
+# [Desktop Integration Infrastructure]
+xdg-desktop-portal-hyprland
+xdg-utils
+
+# [Bootloader]
+grub
