@@ -3,22 +3,23 @@ btop
 htop
 ncdu
 
-# [File Managers & Search]
+# [File Managers / Search / Navigation]
 yazi
-ranger
 broot
+zoxide
 fzf
+
+# [File Viewer]
+bat
+hexyl
+leaf
 
 # [Shell Enhancements]
 starship
 blesh-git
-bat
 eza
 jdupes
-rsync
-hexyl
 tree
-leaf
 
 # [Archive & File Transfer]
 zip
@@ -26,13 +27,25 @@ unzip
 rsync
 
 # [Streaming]
+cliamp
 curd
-torlink
 kew
+mpd
+mpc
+rmpc
+picard
+pipx:lrcup
+
+
+# [Audio Visualizer]
+cava
 
 # [Media Downloaders]
 gallery-dl
 yt-dlp
+torlink
+
+# [HTTP Clients]
 wget
 
 # [Terminal screen recorder]
@@ -41,18 +54,23 @@ asciinema-agg
 
 # [Text Editors]
 neovim
-nano
 micro
 
-# [Aesthetics]
-cmatrix
-cbonsai-git
-figlet
-asciinema
-asciinema-agg
+# [Typing]
 ttyper
-cava
+bluekeys
+smassh-bin
 
 # [Dictionary]
 sdcv
 stardict-wordnet
+
+# [Local LLMs]
+ollama
+
+# [Aesthetics]
+csakura
+cmatrix
+cbonsai-git
+figlet
+sigye

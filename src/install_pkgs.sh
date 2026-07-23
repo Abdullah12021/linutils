@@ -94,6 +94,69 @@ install_aur() {
     fi
 }
 
+# Install special/custom packages that are not on Pacman or AUR
+install_custom() {
+    local pkgs=("$@")
+    local status=0
+    for entry in "${pkgs[@]}"; do
+        # Extract prefix and package name (e.g. pipx:lrcup -> manager="pipx", pkg="lrcup")
+        local manager="${entry%%:*}"
+        local pkg="${entry#*:}"
+
+        case "$manager" in
+            pipx)
+                log_info "Installing ${pkg} via pipx..."
+                # Ensure python-pipx is installed
+                if ! command_exists pipx; then
+                    log_info "Installing python-pipx dependency..."
+                    if ! sudo pacman -S --needed --noconfirm python-pipx; then
+                        log_error "Failed to install python-pipx dependency."
+                        status=1
+                        continue
+                    fi
+                fi
+                if pipx install "$pkg"; then
+                    log_success "${pkg} has been installed successfully."
+                    case "$PATH" in
+                        *"$HOME/.local/bin"*) ;;
+                        *) log_warn "Please ensure ~/.local/bin is in your PATH to run ${pkg}." ;;
+                    esac
+                else
+                    log_error "Failed to install ${pkg} via pipx."
+                    status=1
+                fi
+                ;;
+            cargo)
+                log_info "Installing ${pkg} via cargo..."
+                # Ensure rust/cargo is installed
+                if ! command_exists cargo; then
+                    log_info "Installing rust dependency (includes cargo)..."
+                    if ! sudo pacman -S --needed --noconfirm rust; then
+                        log_error "Failed to install rust dependency."
+                        status=1
+                        continue
+                    fi
+                fi
+                if cargo install "$pkg"; then
+                    log_success "${pkg} has been installed successfully via cargo."
+                    case "$PATH" in
+                        *"$HOME/.cargo/bin"*) ;;
+                        *) log_warn "Please ensure ~/.cargo/bin is in your PATH to run ${pkg}." ;;
+                    esac
+                else
+                    log_error "Failed to install ${pkg} via cargo."
+                    status=1
+                fi
+                ;;
+            *)
+                log_error "Unknown custom package installer: $manager for package $pkg"
+                status=1
+                ;;
+        esac
+    done
+    return $status
+}
+
 # Read a category file and sort + install packages
 install_from_file() {
     local file_path="$1"
@@ -108,6 +171,7 @@ install_from_file() {
 
     local official_pkgs=()
     local aur_pkgs=()
+    local custom_pkgs=()
 
     # Read and parse packages line-by-line
     while IFS= read -r line || [[ -n "$line" ]]; do
@@ -115,8 +179,11 @@ install_from_file() {
         line=$(echo "$line" | sed -e 's/#.*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
         [[ -z "$line" ]] && continue
 
+        # Check for custom packages with prefix
+        if [[ "$line" =~ ^(pipx|cargo): ]]; then
+            custom_pkgs+=("$line")
         # Query Pacman sync databases to determine if it is official
-        if pacman -Si "$line" >/dev/null 2>&1; then
+        elif pacman -Si "$line" >/dev/null 2>&1; then
             official_pkgs+=("$line")
         else
             aur_pkgs+=("$line")
@@ -133,6 +200,11 @@ install_from_file() {
     # Batch install AUR packages
     if [[ ${#aur_pkgs[@]} -gt 0 ]]; then
         install_aur "${aur_pkgs[@]}" || status=1
+    fi
+
+    # Install custom packages
+    if [[ ${#custom_pkgs[@]} -gt 0 ]]; then
+        install_custom "${custom_pkgs[@]}" || status=1
     fi
 
     return $status
@@ -186,6 +258,34 @@ select_and_install_from_file() {
         done
         local pad_width=$((max_len + 4))
 
+        # Calculate maximum category name length (plus 2 for parentheses)
+        local max_cat_len=0
+        for cat in "${pkg_categories[@]}"; do
+            local cat_w=$(( ${#cat} + 2 ))
+            if (( cat_w > max_cat_len )); then
+                max_cat_len=$cat_w
+            fi
+        done
+        # Content width inside the borders
+        local total_w=$((pad_width + max_cat_len))
+
+        # Build box borders
+        local top_border="┌$(printf '%.0s─' $(seq 1 "$((total_w + 2))"))┐"
+        local sep_border="├$(printf '%.0s─' $(seq 1 "$((total_w + 2))"))┤"
+        local bot_border="└$(printf '%.0s─' $(seq 1 "$((total_w + 2))"))┘"
+
+        # Initialize gum_input with table headers enclosed in box
+        local header_label="PACKAGES"
+        local header_pad=$((total_w - ${#header_label} - 10)) # 10 is length of "CATEGORIES"
+        local header_padding=""
+        if ((header_pad > 0)); then
+            header_padding=$(printf '%*s' "$header_pad" "")
+        fi
+        
+        gum_input+=("$top_border")
+        gum_input+=("│ ${header_label}${header_padding}CATEGORIES │")
+        gum_input+=("$sep_border")
+
         local last_cat=""
         for i in "${!pkgs[@]}"; do
             local pkg="${pkgs[$i]}"
@@ -200,26 +300,66 @@ select_and_install_from_file() {
             
             if [[ "$cat" != "$last_cat" ]]; then
                 if [[ -n "$last_cat" ]]; then
-                    gum_input+=("")
+                    # Empty space line inside the box
+                    local empty_fill=$(printf '%*s' "$total_w" "")
+                    gum_input+=("│ ${empty_fill} │")
                 fi
-                gum_input+=("${pkg}${padding}(${cat})")
+                
+                local item_text="${pkg}${padding}(${cat})"
+                local fill_len=$((total_w - ${#item_text}))
+                local fill=""
+                if ((fill_len > 0)); then
+                    fill=$(printf '%*s' "$fill_len" "")
+                fi
+                gum_input+=("│ ${item_text}${fill} │")
                 last_cat="$cat"
             else
-                gum_input+=("${pkg}")
+                local item_text="${pkg}"
+                local fill_len=$((total_w - ${#item_text}))
+                local fill=""
+                if ((fill_len > 0)); then
+                    fill=$(printf '%*s' "$fill_len" "")
+                fi
+                gum_input+=("│ ${item_text}${fill} │")
             fi
         done
+        gum_input+=("$bot_border")
+
+        tput smcup # Enter fullscreen alternate buffer
+        clear
+        gum style --border="double" --border-foreground="80" --margin="1 2" --padding="1 4" \
+            --foreground="176" --bold "SELECT PACKAGES TO INSTALL"
+        echo ""
 
         local gum_choices
-        gum_choices=$(printf "%s\n" "${gum_input[@]}" | gum choose --no-limit --height=20 --header="Select packages [SPACE: Toggle • ENTER: Install • ESC: Cancel]")
-        [[ -z "$gum_choices" ]] && { log_info "Selection cancelled."; return 0; }
+        gum_choices=$(printf "%s\n" "${gum_input[@]}" | gum choose --no-limit \
+            --height=$(( $(tput lines) - 10 )) \
+            --header="Select packages [SPACE: Toggle • ENTER: Install • ESC: Cancel]" \
+            --header.foreground="176" --header.bold \
+            --cursor.foreground="80" --cursor="> " \
+            --selected.foreground="115" --selected.bold \
+            --item.foreground="253")
+
+        tput rmcup # Exit fullscreen for installations
+        [[ -z "$gum_choices" ]] && { log_info "Selection cancelled."; return 2; }
 
         while IFS= read -r choice; do
             local trimmed
             trimmed=$(echo "$choice" | sed -E 's/^[[:space:]]*//' | sed -E 's/[[:space:]]*$//')
             [[ -z "$trimmed" ]] && continue
+            [[ "$trimmed" =~ ^[┌├└] ]] && continue
+            [[ "$trimmed" =~ PACKAGES ]] && continue
+            
+            # Extract content between box borders
+            local inside_box
+            inside_box=$(echo "$choice" | sed -E 's/^[[:space:]]*│[[:space:]]*//' | sed -E 's/[[:space:]]*│[[:space:]]*$//')
+            
+            local trimmed_inside
+            trimmed_inside=$(echo "$inside_box" | sed -E 's/^[[:space:]]*//' | sed -E 's/[[:space:]]*$//')
+            [[ -z "$trimmed_inside" ]] && continue
             
             local pkg_name
-            pkg_name=$(echo "$choice" | sed -E 's/^[[:space:]]*//' | sed -E 's/[[:space:]]+\(.*$//')
+            pkg_name=$(echo "$inside_box" | sed -E 's/[[:space:]]+\(.*$//' | sed -E 's/[[:space:]]*$//')
             selected_pkgs+=("$pkg_name")
         done <<< "$gum_choices"
     else
@@ -277,7 +417,7 @@ select_and_install_from_file() {
 
     if [[ ${#selected_pkgs[@]} -eq 0 ]]; then
         log_info "No packages selected."
-        return 0
+        return 2
     fi
 
     # Hardware-specific auto-filtering (Intel/AMD Microcodes prevention)
@@ -302,8 +442,11 @@ select_and_install_from_file() {
     # Install selected items
     local official_pkgs=()
     local aur_pkgs=()
+    local custom_pkgs=()
     for pkg in "${final_install_list[@]}"; do
-        if pacman -Si "$pkg" >/dev/null 2>&1; then
+        if [[ "$pkg" =~ ^(pipx|cargo): ]]; then
+            custom_pkgs+=("$pkg")
+        elif pacman -Si "$pkg" >/dev/null 2>&1; then
             official_pkgs+=("$pkg")
         else
             aur_pkgs+=("$pkg")
@@ -316,6 +459,9 @@ select_and_install_from_file() {
     fi
     if [[ ${#aur_pkgs[@]} -gt 0 ]]; then
         install_aur "${aur_pkgs[@]}" || status=1
+    fi
+    if [[ ${#custom_pkgs[@]} -gt 0 ]]; then
+        install_custom "${custom_pkgs[@]}" || status=1
     fi
 
     return $status

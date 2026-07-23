@@ -2,7 +2,7 @@
 firefox
 zen
 
-# [File Manager]
+# [File Managers]
 thunar
 nautilus
 
@@ -11,14 +11,16 @@ gwenview
 okular
 mpv
 
-# [Text & Code Editors]
+# [Text Editors]
 obsidian
 kate
 mousepad
+
+# [Code Editors]
 code
 zed
 
-# [Terminal Emulator]
+# [Terminal Emulators]
 kitty
 
 # [Communication Clients]

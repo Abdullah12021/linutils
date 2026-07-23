@@ -90,23 +90,33 @@ optimize_pacman_once() {
 ## 4. Package Installation Sub-menu (Style A - Category Selector)
 show_package_menu() {
     local categories=(hardware system desktop user cli dev)
+    detect_hardware
     while true; do
         clear
-        echo -e "${MAGENTA}==================================================${RESET}"
-        echo -e "           ${BOLD}${CYAN}SELECT PACKAGE CATEGORY${RESET}"
-        echo -e "${MAGENTA}==================================================${RESET}"
-        echo -e "  ${CYAN}[1]${RESET} Hardware Packages"
-        echo -e "  ${CYAN}[2]${RESET} System Packages"
-        echo -e "  ${CYAN}[3]${RESET} Desktop Packages"
-        echo -e "  ${CYAN}[4]${RESET} User Packages"
-        echo -e "  ${CYAN}[5]${RESET} Cli Packages"
-        echo -e "  ${CYAN}[6]${RESET} Dev Packages"
-        echo -e "${MAGENTA}--------------------------------------------------${RESET}"
-        echo -e "  ${YELLOW}[a]${RESET} Install ALL Packages"
-        echo -e "  ${BLUE}[b]${RESET} Back to Main Menu"
-        echo -e "  ${RED}[x]${RESET} Exit"
-        echo -e "${MAGENTA}--------------------------------------------------${RESET}"
-        read -p "${BOLD}${GREEN}Selection:${RESET} " choice
+        echo -e "${MAGENTA}╔══════════════════════════════════════════════════╗${RESET}"
+        echo -e "${MAGENTA}║${CYAN}        📂 SELECT SOFTWARE CATEGORY               ${MAGENTA}║${RESET}"
+        echo -e "${MAGENTA}║${WHITE}   Choose a package template list to install      ${MAGENTA}║${RESET}"
+        echo -e "${MAGENTA}╚══════════════════════════════════════════════════╝${RESET}"
+        echo -e ""
+        echo -e "  ${BOLD}${YELLOW}[ SYSTEM INFO ]${RESET} ────────────────────────────────────"
+        echo -e "   CPU: ${CYAN}${CPU_TYPE^^}${RESET}                 GPU: ${CYAN}${GPU_TYPE^^}${RESET}"
+        echo -e "   OS: ${CYAN}Arch Linux${RESET}           Kernel: ${CYAN}$(uname -r)${RESET}"
+        echo -e "  ────────────────────────────────────────────────────"
+        echo -e ""
+        echo -e "   ${CYAN}❯ [1]${RESET} Hardware Packages        (Microcodes & Drivers)"
+        echo -e "   ${CYAN}❯ [2]${RESET} System Packages          (Daemons, PipeWire, Bluetooth)"
+        echo -e "   ${CYAN}❯ [3]${RESET} Desktop Packages         (Hyprland, Waybar, Applets)"
+        echo -e "   ${CYAN}❯ [4]${RESET} User Packages            (Browsers, Text Editors, Tools)"
+        echo -e "   ${CYAN}❯ [5]${RESET} Cli Packages             (Enhancements, Fastfetch, Yazi)"
+        echo -e "   ${CYAN}❯ [6]${RESET} Dev Packages             (Compilers, Headers, Runtimes)"
+        echo -e ""
+        echo -e "  ────────────────────────────────────────────────────"
+        echo -e "   ${YELLOW}❯ [a]${RESET} Install ALL Packages"
+        echo -e "   ${GREEN}❯ [u]${RESET} Update Package Lists     (Add New Package)"
+        echo -e "   ${BLUE}❯ [b]${RESET} Back to Main Menu"
+        echo -e "   ${RED}❯ [x]${RESET} Exit Setup"
+        echo -e "  ────────────────────────────────────────────────────"
+        read -p "  Selection: " choice
         echo ""
 
         if [[ "$choice" == "b" || "$choice" == "B" ]]; then
@@ -114,6 +124,14 @@ show_package_menu() {
         elif [[ "$choice" == "x" || "$choice" == "X" ]]; then
             log_success "Thank you for using linutils!"
             exit 0
+        elif [[ "$choice" == "u" || "$choice" == "U" ]]; then
+            if [[ -f "./addpkg.sh" ]]; then
+                bash "./addpkg.sh"
+            else
+                log_error "addpkg.sh not found."
+            fi
+            echo -e "\nPress any key to return to menu..."
+            read -n 1 -r -s
         elif [[ "$choice" == "all" || "$choice" == "a" || "$choice" == "A" ]]; then
             for cat in "${categories[@]}"; do
                 if path=$(get_list_path "$cat"); then
@@ -145,7 +163,12 @@ show_package_menu() {
 show_package_menu_gum() {
     local categories=(hardware system desktop user cli dev)
     while true; do
+        tput smcup # Enter fullscreen alternate buffer
         clear
+        gum style --border="double" --border-foreground="176" --margin="1 2" --padding="1 4" \
+            --foreground="80" --bold "SELECT PACKAGE CATEGORY"
+        echo ""
+
         local options=(
             "1) Hardware Packages"
             "2) System Packages"
@@ -154,26 +177,47 @@ show_package_menu_gum() {
             "5) Cli Packages"
             "6) Dev Packages"
             "a) Install ALL Packages"
+            "u) Update Package Lists (Add New Package)"
             "b) Back to Main Menu"
             "x) Exit"
         )
 
         local choice
-        choice=$(gum choose "${options[@]}" --height=10)
+        choice=$(gum choose "${options[@]}" \
+            --height=$(( $(tput lines) - 8 )) \
+            --cursor.foreground="176" --cursor="> " \
+            --selected.foreground="115" --selected.bold \
+            --item.foreground="253")
+
+        tput rmcup # Exit fullscreen for command execution
 
         if [[ "$choice" == "b)"* || -z "$choice" ]]; then
             break
         elif [[ "$choice" == "x)"* ]]; then
             log_success "Thank you for using linutils!"
             exit 0
+        elif [[ "$choice" == "u)"* ]]; then
+            if [[ -f "./addpkg.sh" ]]; then
+                bash "./addpkg.sh"
+            else
+                log_error "addpkg.sh not found."
+            fi
+            echo -e "\nPress any key to return to menu..."
+            read -n 1 -r -s
         elif [[ "$choice" == "a)"* ]]; then
+            local installed_something=0
             for cat in "${categories[@]}"; do
                 if path=$(get_list_path "$cat"); then
                     select_and_install_from_file "$path"
+                    if [[ $? -eq 0 ]]; then
+                        installed_something=1
+                    fi
                 fi
             done
-            echo -e "\nPress any key to return to menu..."
-            read -n 1 -r -s
+            if [[ $installed_something -eq 1 ]]; then
+                echo -e "\nPress any key to return to menu..."
+                read -n 1 -r -s
+            fi
             break
         else
             if [[ "$choice" =~ ^([1-6])\) ]]; then
@@ -181,8 +225,10 @@ show_package_menu_gum() {
                 local selected="${categories[$index]}"
                 if path=$(get_list_path "$selected"); then
                     select_and_install_from_file "$path"
-                    echo -e "\nPress any key to return to menu..."
-                    read -n 1 -r -s
+                    if [[ $? -eq 0 ]]; then
+                        echo -e "\nPress any key to return to menu..."
+                        read -n 1 -r -s
+                    fi
                 else
                     log_error "Failed to locate list for: $selected"
                     sleep 1.5
@@ -239,17 +285,38 @@ deploy_wallpapers() {
 # 5. Main Interactive Loop (Standard CLI)
 show_main_menu() {
     check_sudo
+    detect_hardware
     while true; do
         clear
-        echo -e "${MAGENTA}=========================================${RESET}"
-        echo -e "    ${BOLD}${CYAN}linutils${RESET} - ${WHITE}Arch Linux Setup${RESET}"
-        echo -e "${MAGENTA}=========================================${RESET}"
-        echo -e "  ${CYAN}[1]${RESET} Install System Packages"
-        echo -e "  ${CYAN}[2]${RESET} Install Program Dotfiles"
-        echo -e "  ${CYAN}[3]${RESET} Install Wallpapers"
-        echo -e "  ${RED}[x]${RESET} Exit"
-        echo -e "${MAGENTA}-----------------------------------------${RESET}"
-        read -p "${BOLD}${GREEN}Selection:${RESET} " choice
+        echo -e "${MAGENTA}╔══════════════════════════════════════════════════╗${RESET}"
+        echo -e "${MAGENTA}║${CYAN}            __ _             _   _ _              ${MAGENTA}║${RESET}"
+        echo -e "${MAGENTA}║${CYAN}           / /(_)_ __  _   _| |_(_) |___          ${MAGENTA}║${RESET}"
+        echo -e "${MAGENTA}║${CYAN}          / / | | '_ \\| | | | __| | / __|         ${MAGENTA}║${RESET}"
+        echo -e "${MAGENTA}║${CYAN}         / /__| | | | | |_| | |_| | \\__ \\         ${MAGENTA}║${RESET}"
+        echo -e "${MAGENTA}║${CYAN}         \\____/_|_| |_|\\__,_|\\__|_|_|___/         ${MAGENTA}║${RESET}"
+        echo -e "${MAGENTA}║                                                  ║${RESET}"
+        echo -e "${MAGENTA}║${WHITE}       System post-install manager for Arch       ${MAGENTA}║${RESET}"
+        echo -e "${MAGENTA}╚══════════════════════════════════════════════════╝${RESET}"
+        echo -e ""
+        echo -e "  ${BOLD}${YELLOW}[ SYSTEM INFO ]${RESET} ────────────────────────────────────"
+        echo -e "   CPU: ${CYAN}${CPU_TYPE^^}${RESET}                 GPU: ${CYAN}${GPU_TYPE^^}${RESET}"
+        echo -e "   OS: ${CYAN}Arch Linux${RESET}           Kernel: ${CYAN}$(uname -r)${RESET}"
+        echo -e "  ────────────────────────────────────────────────────"
+        echo -e ""
+        echo -e "   ${CYAN}❯ [1]${RESET} Install System Packages"
+        echo -e "         Installs customized software category list templates."
+        echo -e ""
+        echo -e "   ${CYAN}❯ [2]${RESET} Install Program Dotfiles"
+        echo -e "         Clones & deploys desktop dotfiles configurations."
+        echo -e ""
+        echo -e "   ${CYAN}❯ [3]${RESET} Install Wallpapers"
+        echo -e "         Fetches selected background wallpapers."
+        echo -e ""
+        echo -e "   ${RED}❯ [x]${RESET} Exit Setup"
+        echo -e "         Quit the installer."
+        echo -e ""
+        echo -e "  ────────────────────────────────────────────────────"
+        read -p "  Selection: " choice
         echo ""
 
 
@@ -279,9 +346,20 @@ show_main_menu() {
 show_main_menu_gum() {
     check_sudo
     while true; do
+        tput smcup # Enter fullscreen alternate buffer
         clear
+        gum style --border="double" --border-foreground="176" --margin="1 2" --padding="1 4" \
+            --foreground="80" --bold "LINUTILS - ARCH LINUX SETUP"
+        echo ""
+
         local choice
-        choice=$(gum choose "1) Install System Packages" "2) Install Program Dotfiles" "3) Install Wallpapers" "x) Exit" --height=10)
+        choice=$(gum choose "1) Install System Packages" "2) Install Program Dotfiles" "3) Install Wallpapers" "x) Exit" \
+            --height=$(( $(tput lines) - 8 )) \
+            --cursor.foreground="176" --cursor="> " \
+            --selected.foreground="115" --selected.bold \
+            --item.foreground="253")
+
+        tput rmcup # Exit fullscreen for command execution
 
         case "$choice" in
             "1)"*)
@@ -300,6 +378,7 @@ show_main_menu_gum() {
         esac
     done
 }
+
 
 
 # 6. Command line arguments / Non-interactive triggers

@@ -11,5 +11,7 @@ ninja
 # [Compilers & Runtimes]
 python
 python-pip
+rust
 nodejs
 npm
+
